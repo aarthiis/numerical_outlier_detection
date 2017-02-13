@@ -69,6 +69,8 @@ def get_data(argument):
     print("Fetching data from DBPedia SPARQL endpoint")    
     if argument.lower() == 'city':
         return gd.get_city_population()
+    elif argument.lower() == 'country':
+        return gd.get_country_population()
     print("Data fetched")
     
 def print_entities_from_index(list_of_entities, index):
@@ -94,7 +96,8 @@ def find_overlap_between_multiple_arrays(array_a, array_b, *argv):
     return answer
 
 if __name__=="__main__":
-    #data = np.random.rand(100)
+    print("*"*80)
+    #Applying the numerical methods on cities
     city_name_populations = get_data('City') 
     data = np.asarray(city_name_populations[0])
     print("No of datapoints", data.size)
@@ -108,3 +111,21 @@ if __name__=="__main__":
     overlap = find_overlap_between_multiple_arrays(IQR_outliers, MAD_outliers, KDE_outliers)
     print("Number of outliers using common to IQR, MAD and KDE = ", len(overlap))
     print_entities_from_index(city_name_populations[1], overlap)
+
+
+    print("*"*80)
+
+    #Applying the numerical methods on coutries
+    country_name_populations = get_data('Country') 
+    data = np.asarray(country_name_populations[0])
+    print("No of datapoints", data.size)
+    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)[0]
+    MAD_outliers = find_outliers_using_MAD(data)[0]
+    KDE_outliers = KDE(data)[0]
+    statistics(data)    
+    print("Number of outliers using IQR = ", len(IQR_outliers))
+    print("Number of outliers using MAD = ", len(MAD_outliers))
+    print("Number of outliers using KDE = ", len(KDE_outliers))
+    overlap = find_overlap_between_multiple_arrays(IQR_outliers, MAD_outliers, KDE_outliers)
+    print("Number of outliers using common to IQR, MAD and KDE = ", len(overlap))
+    print_entities_from_index(country_name_populations[1], overlap)
