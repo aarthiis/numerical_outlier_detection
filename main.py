@@ -1,4 +1,5 @@
 import numpy as np
+import get_data as gd
 
 
 def iqr(data, upper, lower):
@@ -29,9 +30,15 @@ def find_outliers_using_IQR(data, upper = 75, lower = 25, multiplyingFactor = 1.
         lower, upper = upper, lower
     qUpper, qLower = np.percentile(data, [upper,lower])
     iqrFactored = multiplyingFactor*(qUpper-qLower)
-    print(qLower-iqrFactored, qUpper+iqrFactored)
     return np.where((data<(qLower-iqrFactored)) | (data>(qUpper+iqrFactored)))
     
+def statistics(data):
+    """This function prints the following statistics
+        mean, median, minimum, maximum"""
+    print("mean = ", np.mean(data))
+    print("median = ", np.median(data))
+    print("minimum value = ", data.min())
+    print("maximum value = ", data.max())
 
 def gauss(x, mu, sigma):
     return (1/sigma*(np.sqrt(2*np.pi)))*np.exp((-1/(2*sigma*sigma))*((x-mu)**2))
@@ -57,15 +64,25 @@ def KDE(x, h = None, threshold = 1):
       
 
     
-def get_data():
+def get_data(argument):
     """This function would be used to access data from DBPedia"""
-    pass    
+    print("Fetching data from DBPedia SPARQL endpoint")    
+    if argument.lower() == 'city':
+        return gd.get_city_population()
+    print("Data fetched")
+    
 
 
 if __name__=="__main__":
-    data = np.random.rand(100000)
-    #print(iqr(data, 95, 5))
-    #print(iqr(data, 5, 95))
-    print(data[find_outliers_using_IQR(data, 75, 50, 1.5)].size)
-    print(data[find_outliers_using_MAD(data)].size)
-    print(data[KDE(data)].size) 
+    #data = np.random.rand(100)
+    city_name_populations = get_data('City') 
+    data = np.asarray(city_name_populations[0])
+    print("No of datapoints", data.size)
+    IQR_outliers = find_outliers_using_IQR(data)[0]
+    MAD_outliers = find_outliers_using_MAD(data)[0]
+    KDE_outliers = KDE(data)[0]
+    statistics(data)    
+    print("Number of outliers using IQR = ", len(IQR_outliers))
+    print("Number of outliers using MAD = ", len(MAD_outliers))
+    print("Number of outliers using KDE = ", len(KDE_outliers))
+    
