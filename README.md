@@ -12,7 +12,7 @@ pip3 install -r requirements.txt
 To run the code, 
 ```bash
 
-python3 run.py
+python3 main.py
 ```
 
 
