@@ -71,18 +71,40 @@ def get_data(argument):
         return gd.get_city_population()
     print("Data fetched")
     
+def print_entities_from_index(list_of_entities, index):
+    """ This function will print the details given the indices.
+        The arguments to the function are
+        list_of_entities : A list containing the URI entities."""
+    for i in index:
+        print(list_of_entities[i])
 
+
+def find_overlap_between_multiple_arrays(array_a, array_b, *argv):
+    """ This function gives the elements which are common to
+        both (and additional ) arrays.
+        The arguments of the function are:
+            array_a : This is the first array
+            array_b : This is the second array
+            argv : Variable arguments
+    """
+    answer = np.intersect1d(array_a, array_b)
+    for arg in argv:
+        answer = np.intersect1d(answer, arg)
+    
+    return answer
 
 if __name__=="__main__":
     #data = np.random.rand(100)
     city_name_populations = get_data('City') 
     data = np.asarray(city_name_populations[0])
     print("No of datapoints", data.size)
-    IQR_outliers = find_outliers_using_IQR(data)[0]
+    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)[0]
     MAD_outliers = find_outliers_using_MAD(data)[0]
     KDE_outliers = KDE(data)[0]
     statistics(data)    
     print("Number of outliers using IQR = ", len(IQR_outliers))
     print("Number of outliers using MAD = ", len(MAD_outliers))
     print("Number of outliers using KDE = ", len(KDE_outliers))
-    
+    overlap = find_overlap_between_multiple_arrays(IQR_outliers, MAD_outliers, KDE_outliers)
+    print("Number of outliers using common to IQR, MAD and KDE = ", len(overlap))
+    print_entities_from_index(city_name_populations[1], overlap)
