@@ -17,14 +17,15 @@ def get_all_types(ordered_entities):
     all_types = {}
     entity_type = {}
     for each in ordered_entities:
-        entity_type[each] = []
-        results = gd.get_types(each)['results']['bindings']
-        for each in results:
-            _type = each['concept']['value']
+        entity_type_each_list = []
+        results = gd.get_types(":" + each.split("/")[-1])['results']['bindings']
+        for each_type in results:
+            _type = each_type['concept']['value']
             if _type not in all_types:
                 all_types[_type] = 0
             all_types[_type]+=1
-            entity_type[each].append(_type)
+            entity_type_each_list.append(_type)
+        entity_type[each] = entity_type_each_list
     return (entity_type, all_types)
     
 def discard_p(all_types, total_entities, p = 0.05):
