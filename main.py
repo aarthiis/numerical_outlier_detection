@@ -1,6 +1,6 @@
 import numpy as np
 import get_data as gd
-
+import clustering as cl
 
 def iqr(data, upper, lower):
     if lower>upper:
@@ -24,19 +24,25 @@ def find_outliers_using_MAD(data, multiplyingFactor=1, preprocess = False, clust
 
     """
     if preprocess and clusters is not None:
-        no_of_clusters = np.maximum(clusters) + 1
-        indices = np.empty(shape=(0,1))
+        no_of_clusters = np.max(clusters) + 1
+        indices = np.empty(shape=(0,), dtype=int)
         for i in range(no_of_clusters):
             data_cluster_i = data[clusters==i]
             median = np.median(data_cluster_i)
             MAD = np.median(np.abs(data - median))
-            indices = np.concatenate((np.where(np.abs(data_cluster_i-median)>=\
-                                        (multiplyingFactor*MAD)), indices), axis=0)
+            indices_found = (np.where(np.abs(data_cluster_i-median)>=\
+                                        (multiplyingFactor*MAD)))
+            try:
+                original_indices = np.where(clusters==i)[0]
+                indices = np.concatenate((original_indices[indices_found[0]], indices), axis = 0)
+            except Exception as e:
+                print(e)
+                print(indices_found)
         return indices
     else:
         median = np.median(data)
         MAD = np.median(np.abs(data - median))
-        return np.where(np.abs(data-median)>=(multiplyingFactor*MAD))
+        return np.where(np.abs(data-median)>=(multiplyingFactor*MAD))[0]
         
 def find_outliers_using_IQR(data, upper = 75, lower = 25, multiplyingFactor = 1.5, \
                                               preprocess = False, clusters = None):
@@ -60,19 +66,26 @@ def find_outliers_using_IQR(data, upper = 75, lower = 25, multiplyingFactor = 1.
 
 
     if preprocess and clusters is not None:
-        no_of_clusters = np.maximum(clusters) + 1
-        indices = np.empty(shape=(0,1))
+        no_of_clusters = np.max(clusters) + 1
+        indices = np.empty(shape=(0,), dtype=int)
         for i in range(no_of_clusters):
             data_cluster_i = data[clusters==i]
             qUpper, qLower = np.percentile(data_cluster_i, [upper,lower])
             iqrFactored = multiplyingFactor*(qUpper-qLower)
-            indices = np.concatenate((np.where((data_cluster_i<(qLower-iqrFactored)) | \
-                        (data_cluster_i>(qUpper+iqrFactored))), indices), axis = 0)
-            return indices
+            indices_found = np.where((data_cluster_i<(qLower-iqrFactored)) | \
+                        (data_cluster_i>(qUpper+iqrFactored)))
+
+            try:
+                original_indices = np.where(clusters==i)[0]
+                indices = np.concatenate((original_indices[indices_found[0]], indices), axis = 0)
+            except Exception as e:
+                print(e)
+                print(indices_found)
+        return indices
     else:
         qUpper, qLower = np.percentile(data, [upper,lower])
         iqrFactored = multiplyingFactor*(qUpper-qLower)
-        return np.where((data<(qLower-iqrFactored)) | (data>(qUpper+iqrFactored)))
+        return np.where((data<(qLower-iqrFactored)) | (data>(qUpper+iqrFactored)))[0]
     
 def statistics(data):
     """This function prints the following statistics
@@ -88,12 +101,10 @@ def gauss(x, mu, sigma):
 def KDE(x, h = None, threshold = 1, preprocess = False, clusters = None):
     """The function is used to find the outliers using
     the Kernel Density Estimation Technique"""
-    if h is None:
-        h = (((4*(sigma**5))/(3*n))**0.2)
 
     if preprocess and clusters is not None:
-        indices = np.empty(shape=(0,1))
-        no_of_clusters = np.maximum(clusters) + 1
+        indices = np.empty(shape=(0,), dtype=int)
+        no_of_clusters = np.max(clusters) + 1
         for i in range(no_of_clusters):
             data_cluster_i = x[clusters==i]
             n = data_cluster_i.size
@@ -101,14 +112,21 @@ def KDE(x, h = None, threshold = 1, preprocess = False, clusters = None):
             mu = np.mean(data_cluster_i)
             sigma = np.std(data_cluster_i)
 
+            if h is None:
+                h = (((4*(sigma**5))/(3*n))**0.2)
            
-            for i in range(data_cluster_i.size):
-                fnh[i] = np.sum(gauss((data_cluster_i-data_cluster_i[i])/h, \
+            for j in range(data_cluster_i.size):
+                fnh[j] = np.sum(gauss((data_cluster_i-data_cluster_i[j])/h, \
                                 mu, sigma))/(n*h)
             
             normalizing = np.sum(fnh)/n
             fnh = fnh/normalizing
-            indices = np.concatenate((indices, np.where(fnh<threshold)), axis = 0)
+            indices_found = np.where(fnh<threshold)
+            try:
+                original_indices = np.where(clusters==i)[0]
+                indices = np.concatenate((original_indices[indices_found[0]], indices), axis = 0)
+            except Exception as e:
+                print(e)
         return indices
     else:
         n = x.size
@@ -116,13 +134,15 @@ def KDE(x, h = None, threshold = 1, preprocess = False, clusters = None):
         mu = np.mean(x)
         sigma = np.std(x)
 
+        if h is None:
+            h = (((4*(sigma**5))/(3*n))**0.2)
        
         for i in range(x.size):
             fnh[i] = np.sum(gauss((x-x[i])/h, mu, sigma))/(n*h)
         
         normalizing = np.sum(fnh)/n
         fnh = fnh/normalizing
-        return np.where(fnh<threshold)
+        return np.where(fnh<threshold)[0]
     
       
 
@@ -164,9 +184,9 @@ if __name__=="__main__":
     city_name_populations = get_data('City') 
     data = np.asarray(city_name_populations[0])
     print("No of datapoints", data.size)
-    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)[0]
-    MAD_outliers = find_outliers_using_MAD(data)[0]
-    KDE_outliers = KDE(data)[0]
+    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)
+    MAD_outliers = find_outliers_using_MAD(data)
+    KDE_outliers = KDE(data)
     statistics(data)    
     print("Number of outliers using IQR = ", len(IQR_outliers))
     print("Number of outliers using MAD = ", len(MAD_outliers))
@@ -179,7 +199,9 @@ if __name__=="__main__":
     print("*"*80)
 
     #Applying the numerical methods on coutries
+
     country_name_populations = get_data('Country') 
+    """
     data = np.asarray(country_name_populations[0])
     print("No of datapoints", data.size)
     IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)[0]
@@ -192,3 +214,11 @@ if __name__=="__main__":
     overlap = find_overlap_between_multiple_arrays(IQR_outliers, MAD_outliers, KDE_outliers)
     print("Number of outliers using common to IQR, MAD and KDE = ", len(overlap))
     print_entities_from_index(country_name_populations[1], overlap)
+    """ 
+    #Using the clustering Module
+    clusters = cl.cluster(country_name_populations[1])
+    iqr_ol = find_outliers_using_IQR(data, upper = 75, lower = 25, \
+        multiplyingFactor = 1.5, preprocess = True, clusters = clusters)
+    overlap = find_overlap_between_multiple_arrays(IQR_outliers, iqr_ol)
+    print_entities_from_index(country_name_populations[1], overlap)
+
