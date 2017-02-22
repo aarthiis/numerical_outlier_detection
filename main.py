@@ -1,6 +1,8 @@
+import os
 import numpy as np
 import get_data as gd
 import clustering as cl
+
 
 def iqr(data, upper, lower):
     if lower>upper:
@@ -147,13 +149,13 @@ def KDE(x, h = None, threshold = 1, preprocess = False, clusters = None):
       
 
     
-def get_data(argument):
+def get_data(argument, parsing_exception_file):
     """This function would be used to access data from DBPedia"""
     print("Fetching data from DBPedia SPARQL endpoint")    
     if argument.lower() == 'city':
-        return gd.get_city_population()
+        return gd.get_city_population(parsing_exception_file)
     elif argument.lower() == 'country':
-        return gd.get_country_population()
+        return gd.get_country_population(parsing_exception_file)
     print("Data fetched")
     
 def print_entities_from_index(list_of_entities, index):
@@ -178,47 +180,53 @@ def find_overlap_between_multiple_arrays(array_a, array_b, *argv):
     
     return answer
 
+def write_outliers_to_file(file_name, list_of_entities, index):
+    f = open(file_name, "w")
+    for i in index:
+        f.write(list_of_entities[i] + "\n")
+    f.close()
+
+def check_and_create_directory(path):
+    if not os.path.exists(path):
+        os.makedirs(path)        
+
+
 if __name__=="__main__":
-    print("*"*80)
-    #Applying the numerical methods on cities
-    city_name_populations = get_data('City') 
-    data = np.asarray(city_name_populations[0])
-    print("No of datapoints", data.size)
-    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)
-    MAD_outliers = find_outliers_using_MAD(data)
-    KDE_outliers = KDE(data)
-    statistics(data)    
-    print("Number of outliers using IQR = ", len(IQR_outliers))
-    print("Number of outliers using MAD = ", len(MAD_outliers))
-    print("Number of outliers using KDE = ", len(KDE_outliers))
-    overlap = find_overlap_between_multiple_arrays(IQR_outliers, MAD_outliers, KDE_outliers)
-    print("Number of outliers using common to IQR, MAD and KDE = ", len(overlap))
-    print_entities_from_index(city_name_populations[1], overlap)
-
-
     print("*"*80)
 
     #Applying the numerical methods on coutries
 
-    country_name_populations = get_data('Country') 
-    """
+    check_and_create_directory(os.getcwd() + "/data/countries/")
+    country_name_populations = get_data('Country', os.getcwd() + "/data/countries/" + "countries.parsing_exception") 
+    
     data = np.asarray(country_name_populations[0])
     print("No of datapoints", data.size)
-    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)[0]
-    MAD_outliers = find_outliers_using_MAD(data)[0]
-    KDE_outliers = KDE(data)[0]
-    statistics(data)    
-    print("Number of outliers using IQR = ", len(IQR_outliers))
-    print("Number of outliers using MAD = ", len(MAD_outliers))
-    print("Number of outliers using KDE = ", len(KDE_outliers))
-    overlap = find_overlap_between_multiple_arrays(IQR_outliers, MAD_outliers, KDE_outliers)
+    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)
+    MAD_outliers = find_outliers_using_MAD(data)
+    KDE_outliers = KDE(data)
+    statistics(data)
+    write_outliers_to_file(os.getcwd() + "/data/countries/" + \
+            "countries.outliers.using.IQR", country_name_populations[1], list(IQR_outliers))
+
+    write_outliers_to_file(os.getcwd() + "/data/countries/" + \
+            "countries.outliers.using.MAD", country_name_populations[1], list(MAD_outliers))
+
+    write_outliers_to_file(os.getcwd() + "/data/countries/" + \
+            "countries.outliers.using.KDE", country_name_populations[1], list(KDE_outliers))
+
+    print("Number of outliers using IQR = ", IQR_outliers.size)
+    print("Number of outliers using MAD = ", MAD_outliers.size)
+    print("Number of outliers using KDE = ", KDE_outliers.size)
+    overlap = find_overlap_between_multiple_arrays(IQR_outliers[0], MAD_outliers[0], KDE_outliers[0])
     print("Number of outliers using common to IQR, MAD and KDE = ", len(overlap))
     print_entities_from_index(country_name_populations[1], overlap)
-    """ 
+    #Using the clustering module
+    
     #Using the clustering Module
     clusters = cl.cluster(country_name_populations[1])
     iqr_ol = find_outliers_using_IQR(data, upper = 75, lower = 25, \
         multiplyingFactor = 1.5, preprocess = True, clusters = clusters)
     overlap = find_overlap_between_multiple_arrays(IQR_outliers, iqr_ol)
-    print_entities_from_index(country_name_populations[1], overlap)
-
+    print_entities_from_index(country_name_populations[1], iqr_ol)
+    write_outliers_to_file(os.getcwd() + "/data/countries/" + \
+            "countries.outliers.using.clustering", country_name_populations[1], iqr_ol.to_list())
