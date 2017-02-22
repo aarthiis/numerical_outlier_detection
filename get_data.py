@@ -27,7 +27,7 @@ def get_types(entity_URI):
     sparql.setQuery(query)  # the previous query as a literal string
     return sparql.query().convert()
 
-def get_country_population():
+def get_country_population(parsing_exception_file):
     sparql = SPARQLWrapper("http://dbpedia.org/sparql")
     sparql.setReturnFormat(JSON)
     
@@ -60,7 +60,7 @@ def get_country_population():
     spo_triples = results['results']['bindings']
     ordered_pop = []
     ordered_name = []
-
+    parsing_error = {}
     for each in spo_triples:
         try:
             country_name = each['country_name']['value']
@@ -68,13 +68,22 @@ def get_country_population():
             ordered_name.append(country_name)
             ordered_pop.append(pop)
         except Exception as e:
+            parsing_error[country_name] = each['population']['value']
             pass
-    
+
+    #Writing all the values which were not parsed properly to a file    
+    if len(parsing_error)!=0:
+        f = open(parsing_exception_file, "w")
+        for each in parsing_error:
+            f.write(each + ":" + parsing_error[each] + "\n")
+        f.close()
+        
+        
     return (ordered_pop, ordered_name)
 
 
 
-def get_city_population():
+def get_city_population(parsing_exception_file):
     sparql = SPARQLWrapper("http://dbpedia.org/sparql")
     sparql.setReturnFormat(JSON)
 
@@ -105,6 +114,7 @@ def get_city_population():
     spo_triples = results['results']['bindings']
     ordered_pop = []
     ordered_name = []
+    parsing_error = {}
     for each in spo_triples:
         try:
             city_name = each['city_name']['value']
@@ -112,8 +122,16 @@ def get_city_population():
             ordered_name.append(city_name)
             ordered_pop.append(pop)
         except Exception as e:
-            pass
-    
+            parsing_error[country_name] = each['population']['value']
+
+
+
+    #Writing all the values which were not parsed properly to a file    
+    if len(parsing_error)!=0:
+        f = open(parsing_exception_file, "w")
+        for each in parsing_error:
+            f.write(each + ":" + parsing_error[each] + "\n")
+        f.close() 
     return (ordered_pop, ordered_name)
 """
 if __name__=="__main__":
