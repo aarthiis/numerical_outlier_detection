@@ -229,4 +229,4 @@ if __name__=="__main__":
     overlap = find_overlap_between_multiple_arrays(IQR_outliers, iqr_ol)
     print_entities_from_index(country_name_populations[1], iqr_ol)
     write_outliers_to_file(os.getcwd() + "/data/countries/" + \
-            "countries.outliers.using.clustering", country_name_populations[1], iqr_ol.to_list())
+            "countries.outliers.using.clustering", country_name_populations[1], list(iqr_ol))
