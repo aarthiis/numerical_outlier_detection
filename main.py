@@ -156,6 +156,8 @@ def get_data(argument, parsing_exception_file):
         return gd.get_city_population(parsing_exception_file)
     elif argument.lower() == 'country':
         return gd.get_country_population(parsing_exception_file)
+    elif argument.lower() == 'company':
+        return gd.get_company_population(parsing_exception_file)
     print("Data fetched")
     
 def print_entities_from_index(list_of_entities, index):
@@ -194,6 +196,32 @@ def check_and_create_directory(path):
 if __name__=="__main__":
     print("*"*80)
 
+    #Applying numerical data on companies
+
+    check_and_create_directory(os.getcwd() + "/data/company/")
+    company_name_populations = get_data('Company', os.getcwd() + "/data/company/" + "company.parsing_exception") 
+    data = np.asarray(company_name_populations[0])
+    """
+    IQR_outliers = find_outliers_using_IQR(data, upper = 95, lower = 5)
+    MAD_outliers = find_outliers_using_MAD(data)
+    KDE_outliers = KDE(data)
+    statistics(data)
+    write_outliers_to_file(os.getcwd() + "/data/company/" + \
+        "company.outliers.using.IQR", company_name_populations[1], list(IQR_outliers))
+
+    write_outliers_to_file(os.getcwd() + "/data/company/" + \
+        "company.outliers.using.MAD", company_name_populations[1], list(MAD_outliers))
+
+    write_outliers_to_file(os.getcwd() + "/data/company/" + \
+        "company.outliers.using.KDE", company_name_populations[1], list(KDE_outliers))
+    """
+    cluster = cl.cluster(company_name_populations[1])
+    np.save(os.getcwd() + "/data/company/clusters.npy", clusters)
+    IQR_outliers_cluster = find_outliers_using_IQR(data, upper = 95, lower = 5,\
+            preprocess = True, clusters = cluster)
+
+    sys.exit(1)
+
     #Applying the numerical methods on coutries
 
     check_and_create_directory(os.getcwd() + "/data/countries/")
@@ -214,6 +242,8 @@ if __name__=="__main__":
     write_outliers_to_file(os.getcwd() + "/data/countries/" + \
             "countries.outliers.using.KDE", country_name_populations[1], list(KDE_outliers))
 
+    clusters = cl.cluster(country_name_populations[1])
+    
     print("Number of outliers using IQR = ", IQR_outliers.size)
     print("Number of outliers using MAD = ", MAD_outliers.size)
     print("Number of outliers using KDE = ", KDE_outliers.size)
